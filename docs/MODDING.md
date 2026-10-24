@@ -26,6 +26,13 @@ Both run in their own locked-down environment (see [What your mod can reach](#wh
 define stay yours, `_G` is your environment, and the engine's script API (`stingray`, `Unit`, `World` ...) works as
 usual. Both are crash-guarded and stay off after a crash until the mod is updated.
 
+### Carrying the stub
+
+A mod that must ship a `boot` of its own (it used to replace `boot`, or it ships Chef Shared Loader built in) can ship
+the loader's stub instead: `chef_loader_stub.lua` from the release, unchanged, as its `boot` resource. Whichever patch
+the game takes `boot` from, the stub starts the one loader Chef Shared Loader's package deploys (`mods/chef/core_1`),
+so the deploy order stops mattering for it. Without Chef Shared Loader installed, the stub does nothing at all.
+
 ### Porting a boot-replacing mod
 
 Two changes are enough:

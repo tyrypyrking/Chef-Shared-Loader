@@ -42,7 +42,10 @@ The guide for mod makers is [docs/MODDING.md](docs/MODDING.md).
 
 1. **Boot takeover.** The engine runs the Lua resource named `boot` (resource id `murmur64("boot")` =
    `0xf476df93691895fa`) from the highest-numbered patch that carries one, then calls its global `init`, `update(dt)`,
-   `render` and `shutdown`. The loader ships as that resource, as Lua source (resource flag 2).
+   `render` and `shutdown`. The loader ships a small stub as that resource (`src/stub.lua`, Lua source, resource flag 2)
+   and itself as the Lua resource `mods/chef/core_1`, which the stub starts. Any mod can carry the same stub as its own
+   `boot`: whichever copy the game runs, it starts this loader, so a mod that carries the stub never takes the loader's
+   place.
 2. **The game's own boot is not run.** On this build it only defines four empty callbacks, loads `debug` on
    non-release builds, and calls `jit.off()` when LuaJIT is present (decoded from build 25988413's bytecode). Skipping
    it changes nothing in a release build.
@@ -324,7 +327,8 @@ build (no `--test`) leaves `TEST` nil: no dev mode, no timing loop. Everything e
 
 | Path | What it is |
 |---|---|
-| `src/loader.lua` | The boot script. It carries the five modules below inline, because the game runs boot as one script. |
+| `src/stub.lua` | The boot script: a frozen stub that starts the loader (`mods/chef/core_1`). Any mod may carry it unchanged. |
+| `src/loader.lua` | The loader, shipped as `mods/chef/core_1`. It carries the five modules below inline, because the game runs it as one script. |
 | `src/chef_loader/compat.lua` | The LuaJIT parts. |
 | `src/chef_loader/probe.lua` | The once-a-launch Lua probe. |
 | `src/chef_loader/services.lua` | The api 2 services, the options menu, the look-alikes and dev mode. |

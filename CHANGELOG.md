@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+**Load order**
+- The release ships a small stub as `boot` and the loader as `mods/chef/core_1`, which the stub starts. Any mod can
+  carry the same stub (`chef_loader_stub.lua`) as its own `boot`: whichever copy the game runs starts this loader, so a
+  mod that carries it no longer replaces the loader when it's deployed after it.
+
 ## 1.0.1
 
 **Crash safety**

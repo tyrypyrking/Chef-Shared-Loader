@@ -1,4 +1,5 @@
--- Chef Shared Loader - the game's `boot` script, replaced
+-- Chef Shared Loader - the game's `boot` script, replaced (from the stub, src/stub.lua: I'm the Lua resource
+-- mods/chef/core_1 it starts, so any mod can carry the stub as its boot and the last one deployed still starts me)
 -- Runs Lua mods on the game's plain Lua 5.1 (no LuaJIT, no ffi).
 -- What it's built on:
 --   * the game runs `boot` at start-up and calls its init/update/render/shutdown; its own boot does nothing

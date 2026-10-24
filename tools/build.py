@@ -4,15 +4,16 @@
   python3 tools/build.py <out dir> --header-from <a working Lua patch>            -> Chef-Shared-Loader-<ver>.zip (release)
   python3 tools/build.py <out dir> --header-from <a working Lua patch> --test N   -> Chef-Shared-Loader-<ver>-Test-N.zip
 
-The zip holds one patch with the game's `boot` script replaced by src/loader.lua (with compat.lua, probe.lua,
-services.lua, utilities.lua and sandbox.lua copied in; tools/splice.py --check must pass), plus manifest.json and
-thumbnail.png.
+The zip holds one patch with the game's `boot` script replaced by the stub (src/stub.lua) and the loader itself as
+the Lua resource mods/chef/core_1 (src/loader.lua, with compat.lua, probe.lua, services.lua, utilities.lua and
+sandbox.lua copied in; tools/splice.py --check must pass), plus manifest.json and thumbnail.png. Any mod can carry the
+stub as its own `boot` (chef_loader_stub.lua next to the zip): whichever copy the game runs starts the same loader.
 Same zip byte for byte on every build. Test builds share the loader's own GUID and update it in place.
 
 A test build also sets the loader's TEST line (`local TEST = N --@@TEST@@`): only a test build has dev mode
 (chef_loader_dev.txt) and the probe's Lua timing loop, and its log says "Test N". A release build leaves TEST nil.
-The boot script that went into the patch is written next to the zip too (chef_loader_boot.lua), for the simulator
-and for mods that carry the loader built in.
+The loader that went into the patch (mods/chef/core_1) is written next to the zip too, as chef_loader_boot.lua (the
+name the simulator reads: it runs the loader as boot), and the stub as chef_loader_stub.lua, for mods that carry it.
 """
 import json, os, re, subprocess, sys, zipfile, shutil
 sys.dont_write_bytecode = True          # no __pycache__ in the kit
@@ -59,7 +60,12 @@ MARK = re.compile(rb'^local TEST = nil --@@TEST@@', re.M)
 assert len(MARK.findall(src)) == 1, 'loader.lua needs exactly one "local TEST = nil --@@TEST@@" line'
 if TEST:
     src = MARK.sub(b'local TEST = %d --@@TEST@@' % TEST, src)
-h.write_lua_archive(os.path.join(d, '9ba626afa44a3aa3.patch_0'), [(h.resource_hash('boot'), h.lua_resource(src))], HEADER)
+STUB = open(os.path.join(HERE, 'src', 'stub.lua'), 'rb').read()
+# the stub looks for mods/chef/core_3 down to core_1; a new number only for a loader that old stubs mustn't start
+CORE = 'mods/chef/core_1'
+assert b"'mods/chef/core_' .. n" in STUB and b'--@@LOADER@@' in STUB, 'src/stub.lua is not the stub this build expects'
+h.write_lua_archive(os.path.join(d, '9ba626afa44a3aa3.patch_0'),
+                    [(h.resource_hash('boot'), h.lua_resource(STUB)), (h.resource_hash(CORE), h.lua_resource(src))], HEADER)
 json.dump({'Version': 1, 'Guid': GUID, 'Name': name, 'IconPath': 'thumbnail.png',
            'Description': ("Runs Lua mods on the current game build (Lua 5.1) for any mod author: finds every Chef Shared Loader mod "
                            "in your installed mods and runs each in its own space, side by side, with no fight over the game's "
@@ -71,6 +77,7 @@ json.dump({'Version': 1, 'Guid': GUID, 'Name': name, 'IconPath': 'thumbnail.png'
 shutil.copy(os.path.join(HERE, 'tools', 'thumbnail.png'), d)
 z = os.path.join(OUT, f'Chef-Shared-Loader-{VERSION}' + (f'-Test-{TEST}' if TEST else '') + '.zip')
 zip_dir(d, z)
-# the boot script next to the zip, for the simulator
+# the loader next to the zip, for the simulator, and the stub, for mods that carry it as their boot
 open(os.path.join(OUT, 'chef_loader_boot.lua'), 'wb').write(src)
+open(os.path.join(OUT, 'chef_loader_stub.lua'), 'wb').write(STUB)
 print(z)
